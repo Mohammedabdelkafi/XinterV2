@@ -1,9 +1,10 @@
 let text = "";
+let src = text.split('');
 let tokens = [];
 let pos = -1;
 let curr_char = "";
 let digits = "1234567890";
-function advance() {;
+function advance() {
     curr_char=tokens[pos];
     pos+=1;
 }
@@ -16,7 +17,7 @@ function tokenize() {
             tokens.append("MINUS");
         }
         else if (curr_char in digits) {
-            parsenum()
+            parsenum();
         }
     }
 
@@ -28,7 +29,8 @@ function parsenum() {
         advance();
     }
     else {
-        tokens.append(Number(num_str))
-        advance
+        tokens.append(Number(num_str));
+        advance();
     }
 }
+console.log(tokens);
