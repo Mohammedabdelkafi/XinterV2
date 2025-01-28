@@ -28,25 +28,25 @@ class Lexer {
     tokenize() {
         while (this.curr_char !== null) {
             if (this.curr_char === "+") {
-                this.tokens.push("PLUS");
+                this.tokens.push({ type: "PLUS", value: "+" });
                 this.advance();
             } else if (this.curr_char === "-") {
-                this.tokens.push("MINUS");
+                this.tokens.push({ type: "MINUS", value: "-" });
                 this.advance();
             } else if (this.curr_char === "*") {
-                this.tokens.push("MULTIPLY");
+                this.tokens.push({ type: "MULTIPLY", value: "*" });
                 this.advance();
             } else if (this.curr_char === "/") {
-                this.tokens.push("DIVIDE");
+                this.tokens.push({ type: "DIVIDE", value: "/" });
                 this.advance();
             } else if (this.curr_char === "=") {
-                this.tokens.push("EQUALS");
+                this.tokens.push({ type: "EQUALS", value: "=" });
                 this.advance();
             } else if (this.curr_char === "(") {
-                this.tokens.push("LPAREN");
+                this.tokens.push({ type: "LPAREN", value: "(" });
                 this.advance();
             } else if (this.curr_char === ")") {
-                this.tokens.push("RPAREN");
+                this.tokens.push({ type: "RPAREN", value: ")" });
                 this.advance();
             } else if (this.curr_char === ' ') {
                 this.advance(); // Skip whitespace
@@ -69,7 +69,7 @@ class Lexer {
             num_str += this.curr_char;
             this.advance();
         }
-        this.tokens.push(Number(num_str));
+        this.tokens.push({ type: "NUMBER", value: Number(num_str) });
     }
 
     parsevar() {
@@ -78,18 +78,18 @@ class Lexer {
             var_str += this.curr_char;
             this.advance();
         }
-        this.tokens.push(var_str);
+        this.tokens.push({ type: "IDENTIFIER", value: var_str });
     }
 }
 
 class Parser {
-    constructor(tokens, calcMode, debug) {
+    constructor(tokens, calcMode, debug, variables) {
         this.tokens = tokens;
         this.idx = -1;
         this.curr_tok = null;
         this.calcMode = calcMode;
         this.debug = debug;
-        this.variables = {};
+        this.variables = variables;
         this.advance();
         this.parse();
     }
@@ -102,17 +102,17 @@ class Parser {
             this.curr_tok = null;
         }
         if (this.debug) {
-            console.log(`Parser advance: idx=${this.idx}, curr_tok=${this.curr_tok}`);
+            console.log(`Parser advance: idx=${this.idx}, curr_tok=${JSON.stringify(this.curr_tok)}`);
         }
     }
 
     parse() {
         while (this.curr_tok !== null) {
-            if (this.curr_tok === "print") {
+            if (this.curr_tok.type === "IDENTIFIER" && this.tokens[this.idx + 1] && this.tokens[this.idx + 1].type === "EQUALS") {
+                this.assign();
+            } else if (this.curr_tok.type === "IDENTIFIER" && this.curr_tok.value === "print") {
                 this.advance();
                 this.print();
-            } else if (typeof this.curr_tok === "string" && this.tokens[this.idx + 1] === "EQUALS") {
-                this.assign();
             } else {
                 this.expr();
             }
@@ -120,7 +120,7 @@ class Parser {
     }
 
     assign() {
-        let var_name = this.curr_tok;
+        let var_name = this.curr_tok.value;
         this.advance(); // skip var name
         this.advance(); // skip EQUALS
         let value = this.expr();
@@ -132,8 +132,8 @@ class Parser {
 
     expr() {
         let result = this.term();
-        while (this.curr_tok === "PLUS" || this.curr_tok === "MINUS") {
-            let op = this.curr_tok;
+        while (this.curr_tok && (this.curr_tok.type === "PLUS" || this.curr_tok.type === "MINUS")) {
+            let op = this.curr_tok.type;
             this.advance();
             if (op === "PLUS") {
                 result += this.term();
@@ -149,8 +149,8 @@ class Parser {
 
     term() {
         let result = this.factor();
-        while (this.curr_tok === "MULTIPLY" || this.curr_tok === "DIVIDE") {
-            let op = this.curr_tok;
+        while (this.curr_tok && (this.curr_tok.type === "MULTIPLY" || this.curr_tok.type === "DIVIDE")) {
+            let op = this.curr_tok.type;
             this.advance();
             if (op === "MULTIPLY") {
                 result *= this.factor();
@@ -163,20 +163,26 @@ class Parser {
 
     factor() {
         let result;
-        if (typeof this.curr_tok === "number") {
-            result = this.curr_tok;
+        if (this.curr_tok.type === "NUMBER") {
+            result = this.curr_tok.value;
             this.advance();
-        } else if (typeof this.curr_tok === "string" && this.curr_tok in this.variables) {
-            result = this.variables[this.curr_tok];
-            this.advance();
-        } else if (this.curr_tok === "LPAREN") {
+        } else if (this.curr_tok.type === "IDENTIFIER") {
+            if (this.curr_tok.value in this.variables) {
+                result = this.variables[this.curr_tok.value];
+                this.advance();
+            } else {
+                throw new Error(`Undefined variable: ${this.curr_tok.value}`);
+            }
+        } else if (this.curr_tok.type === "LPAREN") {
             this.advance();
             result = this.expr();
-            if (this.curr_tok === "RPAREN") {
+            if (this.curr_tok.type === "RPAREN") {
                 this.advance();
             } else {
                 throw new Error("Expected ')'");
             }
+        } else {
+            throw new Error("Unexpected token: " + JSON.stringify(this.curr_tok));
         }
         return result;
     }
@@ -191,6 +197,7 @@ function run() {
     let a = true;
     let calcMode = false;
     let debug = false;
+    let variables = {};
     const commands = [];
     while (a === true) {
         let text = prompt("Xinter ==>");
@@ -214,14 +221,14 @@ function run() {
             console.log("Running all commands except calc and decalc...");
             for (const cmd of commands) {
                 let lexer = new Lexer(cmd, debug);
-                let parser = new Parser(lexer.tokens, calcMode, debug);
+                let parser = new Parser(lexer.tokens, calcMode, debug, variables);
             }
             continue;
         } else {
             commands.push(text);
         }
         let lexer = new Lexer(text, debug);
-        let parser = new Parser(lexer.tokens, calcMode, debug);
+        let parser = new Parser(lexer.tokens, calcMode, debug, variables);
     }
 }
 run();
