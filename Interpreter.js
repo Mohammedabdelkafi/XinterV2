@@ -48,6 +48,8 @@ class Lexer {
             } else if (this.curr_char === ")") {
                 this.tokens.push({ type: "RPAREN", value: ")" });
                 this.advance();
+            } else if (this.curr_char === '"') {
+                this.parsestring();
             } else if (this.curr_char === ' ') {
                 this.advance(); // Skip whitespace
             } else if (this.digits.includes(this.curr_char)) {
@@ -70,6 +72,21 @@ class Lexer {
             this.advance();
         }
         this.tokens.push({ type: "NUMBER", value: Number(num_str) });
+    }
+
+    parsestring() {
+        let str_val = "";
+        this.advance(); // Skip the opening quote
+        while (this.curr_char !== null && this.curr_char !== '"') {
+            str_val += this.curr_char;
+            this.advance();
+        }
+        if (this.curr_char === '"') {
+            this.advance(); // Skip the closing quote
+            this.tokens.push({ type: "STRING", value: str_val });
+        } else {
+            throw new Error("Unterminated string literal");
+        }
     }
 
     parsevar() {
@@ -110,7 +127,7 @@ class Parser {
         while (this.curr_tok !== null) {
             if (this.curr_tok.type === "IDENTIFIER" && this.tokens[this.idx + 1] && this.tokens[this.idx + 1].type === "EQUALS") {
                 this.assign();
-            } else if (this.curr_tok.type === "IDENTIFIER" && this.curr_tok.value === "print") {
+            } else if (this.curr_tok.type === "IDENTIFIER" && this.curr_tok.value === "log") {
                 this.advance();
                 this.print();
             } else {
@@ -166,6 +183,9 @@ class Parser {
         if (this.curr_tok.type === "NUMBER") {
             result = this.curr_tok.value;
             this.advance();
+        } else if (this.curr_tok.type === "STRING") {
+            result = this.curr_tok.value;
+            this.advance();
         } else if (this.curr_tok.type === "IDENTIFIER") {
             if (this.curr_tok.value in this.variables) {
                 result = this.variables[this.curr_tok.value];
@@ -218,7 +238,7 @@ function run() {
             console.log("Developer mode deactivated");
             continue;
         } else if (text === "run") {
-            console.log("Running all commands except calc and decalc...");
+            console.log("Running all commands...");
             for (const cmd of commands) {
                 let lexer = new Lexer(cmd, debug);
                 let parser = new Parser(lexer.tokens, calcMode, debug, variables);
