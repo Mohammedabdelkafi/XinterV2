@@ -1,8 +1,5 @@
 const prompt = require("prompt-sync")({ sigint: true });
-let text = prompt("Xinter ==>");
-console.log("Input Text: ", text); // Log input text
 
-// Lexer
 class Lexer {
     constructor(text) {
         this.src = text.split('');
@@ -10,7 +7,7 @@ class Lexer {
         this.pos = -1;
         this.curr_char = "";
         this.digits = "1234567890";
-        this.letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        this.letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
         this.advance();
         this.tokenize();
     }
@@ -83,12 +80,13 @@ class Lexer {
     }
 }
 
-// Parser
 class Parser {
     constructor(tokens) {
         this.tokens = tokens;
         this.idx = -1;
         this.curr_tok = null;
+        this.variables = [];
+        this.values =[];
         this.advance();
         this.parse();
     }
@@ -147,19 +145,23 @@ class Parser {
             } else {
                 throw new Error("Expected ')'");
             }
-        } else {
-            throw new Error("Unexpected token: " + this.curr_tok);
         }
         return result;
     }
+    print() {
+        if (this.curr_tok) {}
+
+    }
 }
+
 function run() {
-    let a=true
-    while (a===true) {
+    let a = true;
+    while (a === true) {
         let text = prompt("Xinter ==>");
         let lexer = new Lexer(text);
         let parser = new Parser(lexer.tokens);
-        console.log("Tokens: ", lexer.tokens); // Log tokens after lexer
+        console.log("Tokens: ", lexer.tokens);
     }
 }
-run()
+
+run();
