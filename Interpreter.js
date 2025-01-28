@@ -89,7 +89,7 @@ class Parser {
         this.curr_tok = null;
         this.calcMode = calcMode;
         this.debug = debug;
-        this.variables = [];
+        this.variables = {};
         this.advance();
         this.parse();
     }
@@ -111,9 +111,22 @@ class Parser {
             if (this.curr_tok === "print") {
                 this.advance();
                 this.print();
+            } else if (typeof this.curr_tok === "string" && this.tokens[this.idx + 1] === "EQUALS") {
+                this.assign();
             } else {
                 this.expr();
             }
+        }
+    }
+
+    assign() {
+        let var_name = this.curr_tok;
+        this.advance(); // skip var name
+        this.advance(); // skip EQUALS
+        let value = this.expr();
+        this.variables[var_name] = value;
+        if (this.debug) {
+            console.log(`Assigned: ${var_name} = ${value}`);
         }
     }
 
@@ -153,6 +166,9 @@ class Parser {
         if (typeof this.curr_tok === "number") {
             result = this.curr_tok;
             this.advance();
+        } else if (typeof this.curr_tok === "string" && this.curr_tok in this.variables) {
+            result = this.variables[this.curr_tok];
+            this.advance();
         } else if (this.curr_tok === "LPAREN") {
             this.advance();
             result = this.expr();
@@ -186,13 +202,13 @@ function run() {
             calcMode = false;
             console.log("Calc mode deactivated");
             continue;
-        } else if (text === "deb") {
+        } else if (text === "dev") {
             debug = true;
-            console.log("Debug mode activated");
+            console.log("Developer mode activated");
             continue;
-        } else if (text === "undeb") {
+        } else if (text === "undev") {
             debug = false;
-            console.log("Debug mode deactivated");
+            console.log("Developer mode deactivated");
             continue;
         } else if (text === "run") {
             console.log("Running all commands except calc and decalc...");
@@ -208,5 +224,4 @@ function run() {
         let parser = new Parser(lexer.tokens, calcMode, debug);
     }
 }
-
 run();
