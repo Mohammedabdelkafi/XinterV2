@@ -1,13 +1,14 @@
 const prompt = require("prompt-sync")({ sigint: true });
 
 class Lexer {
-    constructor(text) {
+    constructor(text, debug) {
         this.src = text.split('');
         this.tokens = [];
         this.pos = -1;
         this.curr_char = "";
         this.digits = "1234567890";
         this.letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
+        this.debug = debug;
         this.advance();
         this.tokenize();
     }
@@ -18,6 +19,9 @@ class Lexer {
             this.curr_char = this.src[this.pos];
         } else {
             this.curr_char = null;
+        }
+        if (this.debug) {
+            console.log(`Lexer advance: pos=${this.pos}, curr_char=${this.curr_char}`);
         }
     }
 
@@ -54,7 +58,9 @@ class Lexer {
                 throw new Error("Unexpected character: " + this.curr_char);
             }
         }
-        this.logTokens(); // Log tokens after tokenization
+        if (this.debug) {
+            console.log(`Lexer tokens: ${JSON.stringify(this.tokens)}`);
+        }
     }
 
     parsenum() {
@@ -74,19 +80,16 @@ class Lexer {
         }
         this.tokens.push(var_str);
     }
-
-    logTokens() {
-        console.log(this.tokens); // Log tokens
-    }
 }
 
 class Parser {
-    constructor(tokens) {
+    constructor(tokens, calcMode, debug) {
         this.tokens = tokens;
         this.idx = -1;
         this.curr_tok = null;
+        this.calcMode = calcMode;
+        this.debug = debug;
         this.variables = [];
-        this.values =[];
         this.advance();
         this.parse();
     }
@@ -98,10 +101,20 @@ class Parser {
         } else {
             this.curr_tok = null;
         }
+        if (this.debug) {
+            console.log(`Parser advance: idx=${this.idx}, curr_tok=${this.curr_tok}`);
+        }
     }
 
     parse() {
-        this.expr();
+        while (this.curr_tok !== null) {
+            if (this.curr_tok === "print") {
+                this.advance();
+                this.print();
+            } else {
+                this.expr();
+            }
+        }
     }
 
     expr() {
@@ -115,7 +128,10 @@ class Parser {
                 result -= this.term();
             }
         }
-        console.log("Result: ", result); // Log result
+        if (this.calcMode) {
+            console.log("Result: ", result);
+        }
+        return result;
     }
 
     term() {
@@ -148,19 +164,48 @@ class Parser {
         }
         return result;
     }
-    print() {
-        if (this.curr_tok) {}
 
+    print() {
+        let value = this.expr();
+        console.log(value);
     }
 }
 
 function run() {
     let a = true;
+    let calcMode = false;
+    let debug = false;
+    const commands = [];
     while (a === true) {
         let text = prompt("Xinter ==>");
-        let lexer = new Lexer(text);
-        let parser = new Parser(lexer.tokens);
-        console.log("Tokens: ", lexer.tokens);
+        if (text === "calc") {
+            calcMode = true;
+            console.log("Calc mode activated");
+            continue;
+        } else if (text === "decalc") {
+            calcMode = false;
+            console.log("Calc mode deactivated");
+            continue;
+        } else if (text === "deb") {
+            debug = true;
+            console.log("Debug mode activated");
+            continue;
+        } else if (text === "undeb") {
+            debug = false;
+            console.log("Debug mode deactivated");
+            continue;
+        } else if (text === "run") {
+            console.log("Running all commands except calc and decalc...");
+            for (const cmd of commands) {
+                let lexer = new Lexer(cmd, debug);
+                let parser = new Parser(lexer.tokens, calcMode, debug);
+            }
+            continue;
+        } else {
+            commands.push(text);
+        }
+        let lexer = new Lexer(text, debug);
+        let parser = new Parser(lexer.tokens, calcMode, debug);
     }
 }
 
