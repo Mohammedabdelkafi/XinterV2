@@ -1,5 +1,6 @@
 const prompt = require("prompt-sync")({ sigint: true });
 let text = prompt("Xinter ==>");
+console.log("Input Text: ", text); // Log input text
 
 // Lexer
 class Lexer {
@@ -78,7 +79,7 @@ class Lexer {
     }
 
     logTokens() {
-        console.log(this.tokens);
+        console.log(this.tokens); // Log tokens
     }
 }
 
@@ -116,7 +117,7 @@ class Parser {
                 result -= this.term();
             }
         }
-        console.log("Result: ", result);
+        console.log("Result: ", result); // Log result
     }
 
     term() {
@@ -152,6 +153,13 @@ class Parser {
         return result;
     }
 }
-
-let lexer = new Lexer(text);
-let parser = new Parser(lexer.tokens);
+function run() {
+    let a=true
+    while (a===true) {
+        let text = prompt("Xinter ==>");
+        let lexer = new Lexer(text);
+        let parser = new Parser(lexer.tokens);
+        console.log("Tokens: ", lexer.tokens); // Log tokens after lexer
+    }
+}
+run()
