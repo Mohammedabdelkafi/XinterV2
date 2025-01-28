@@ -1,0 +1,49 @@
+Detailed Explanation of Methods in Interpreter.js
+Lexer Class
+Constructor (constructor(text, debug))
+
+Initializes the source text into characters, sets up initial properties, and starts the tokenization process.
+Advance Method (advance())
+
+Moves the position forward by one character and updates curr_char. Logs the current state if debug mode is enabled.
+Tokenize Method (tokenize())
+
+Iterates through characters, creating tokens based on character type (operators, parentheses, strings, numbers, identifiers). Calls specific methods for different types of tokens.
+Parse Number Method (parsenum())
+
+Collects digits to form a number token and advances the position.
+Parse String Method (parsestring())
+
+Collects characters between double quotes to form a string token. Throws an error if the string is not properly terminated.
+Parse Variable Method (parsevar())
+
+Collects letters and digits to form an identifier token.
+Parser Class
+Constructor (constructor(tokens, calcMode, debug, variables))
+
+Initializes properties with tokens and starts parsing. Sets debug and calc mode flags. Stores variable values.
+Advance Method (advance())
+
+Moves the current token forward and logs the current state if debug mode is enabled.
+Parse Method (parse())
+
+Interprets tokens, handling assignments, print statements, and expressions.
+Assign Method (assign())
+
+Assigns values to variables based on expressions. Logs the assignment if debug mode is enabled.
+Expression Method (expr())
+
+Evaluates expressions, handling addition and subtraction. Logs results in calc mode.
+Term Method (term())
+
+Evaluates terms, handling multiplication and division.
+Factor Method (factor())
+
+Evaluates factors, handling numbers, strings, variables, and expressions in parentheses. Throws errors for unexpected tokens.
+Print Method (print())
+
+Evaluates expressions and prints the result.
+Run Function
+Run Function (run())
+
+Main entry point for the interpreter. Continuously prompts for input, processes commands, and manages modes (calc, debug). Executes stored commands using the Lexer and Parser.
