@@ -244,7 +244,11 @@ function run() {
                 let parser = new Parser(lexer.tokens, calcMode, debug, variables);
             }
             continue;
-        } else {
+        } else if (text === "exit") {
+            console.log("exiting");
+            break;
+        }
+        else {
             commands.push(text);
         }
         let lexer = new Lexer(text, debug);
