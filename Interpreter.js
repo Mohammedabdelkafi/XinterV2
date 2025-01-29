@@ -27,37 +27,50 @@ class Lexer {
 
     tokenize() {
         while (this.curr_char !== null) {
-            if (this.curr_char === "+") {
-                this.tokens.push({ type: "PLUS", value: "+" });
-                this.advance();
-            } else if (this.curr_char === "-") {
-                this.tokens.push({ type: "MINUS", value: "-" });
-                this.advance();
-            } else if (this.curr_char === "*") {
-                this.tokens.push({ type: "MULTIPLY", value: "*" });
-                this.advance();
-            } else if (this.curr_char === "/") {
-                this.tokens.push({ type: "DIVIDE", value: "/" });
-                this.advance();
-            } else if (this.curr_char === "=") {
-                this.tokens.push({ type: "EQUALS", value: "=" });
-                this.advance();
-            } else if (this.curr_char === "(") {
-                this.tokens.push({ type: "LPAREN", value: "(" });
-                this.advance();
-            } else if (this.curr_char === ")") {
-                this.tokens.push({ type: "RPAREN", value: ")" });
-                this.advance();
-            } else if (this.curr_char === '"') {
-                this.parsestring();
-            } else if (this.curr_char === ' ') {
-                this.advance(); // Skip whitespace
-            } else if (this.digits.includes(this.curr_char)) {
-                this.parsenum();
-            } else if (this.letters.includes(this.curr_char)) {
-                this.parsevar();
-            } else {
-                throw new Error("Unexpected character: " + this.curr_char);
+            switch (this.curr_char) {
+                case "+":
+                    this.tokens.push({ type: "PLUS", value: "+" });
+                    this.advance();
+                    break;
+                case "-":
+                    this.tokens.push({ type: "MINUS", value: "-" });
+                    this.advance();
+                    break;
+                case "*":
+                    this.tokens.push({ type: "MULTIPLY", value: "*" });
+                    this.advance();
+                    break;
+                case "/":
+                    this.tokens.push({ type: "DIVIDE", value: "/" });
+                    this.advance();
+                    break;
+                case "=":
+                    this.tokens.push({ type: "EQUALS", value: "=" });
+                    this.advance();
+                    break;
+                case "(":
+                    this.tokens.push({ type: "LPAREN", value: "(" });
+                    this.advance();
+                    break;
+                case ")":
+                    this.tokens.push({ type: "RPAREN", value: ")" });
+                    this.advance();
+                    break;
+                case '"':
+                    this.parsestring();
+                    break;
+                case ' ':
+                    this.advance(); // Skip whitespace
+                    break;
+                default:
+                    if (this.digits.includes(this.curr_char)) {
+                        this.parsenum();
+                    } else if (this.letters.includes(this.curr_char)) {
+                        this.parsevar();
+                    } else {
+                        throw new Error("Unexpected character: " + this.curr_char);
+                    }
+                    break;
             }
         }
         if (this.debug) {
@@ -125,13 +138,20 @@ class Parser {
 
     parse() {
         while (this.curr_tok !== null) {
-            if (this.curr_tok.type === "IDENTIFIER" && this.tokens[this.idx + 1] && this.tokens[this.idx + 1].type === "EQUALS") {
-                this.assign();
-            } else if (this.curr_tok.type === "IDENTIFIER" && this.curr_tok.value === "log") {
-                this.advance();
-                this.print();
-            } else {
-                this.expr();
+            switch (this.curr_tok.type) {
+                case "IDENTIFIER":
+                    if (this.tokens[this.idx + 1] && this.tokens[this.idx + 1].type === "EQUALS") {
+                        this.assign();
+                    } else if (this.curr_tok.value === "log") {
+                        this.advance();
+                        this.print();
+                    } else {
+                        this.expr();
+                    }
+                    break;
+                default:
+                    this.expr();
+                    break;
             }
         }
     }
@@ -180,29 +200,34 @@ class Parser {
 
     factor() {
         let result;
-        if (this.curr_tok.type === "NUMBER") {
-            result = this.curr_tok.value;
-            this.advance();
-        } else if (this.curr_tok.type === "STRING") {
-            result = this.curr_tok.value;
-            this.advance();
-        } else if (this.curr_tok.type === "IDENTIFIER") {
-            if (this.curr_tok.value in this.variables) {
-                result = this.variables[this.curr_tok.value];
+        switch (this.curr_tok.type) {
+            case "NUMBER":
+                result = this.curr_tok.value;
                 this.advance();
-            } else {
-                throw new Error(`Undefined variable: ${this.curr_tok.value}`);
-            }
-        } else if (this.curr_tok.type === "LPAREN") {
-            this.advance();
-            result = this.expr();
-            if (this.curr_tok.type === "RPAREN") {
+                break;
+            case "STRING":
+                result = this.curr_tok.value;
                 this.advance();
-            } else {
-                throw new Error("Expected ')'");
-            }
-        } else {
-            throw new Error("Unexpected token: " + JSON.stringify(this.curr_tok));
+                break;
+            case "IDENTIFIER":
+                if (this.curr_tok.value in this.variables) {
+                    result = this.variables[this.curr_tok.value];
+                    this.advance();
+                } else {
+                    throw new Error(`Undefined variable: ${this.curr_tok.value}`);
+                }
+                break;
+            case "LPAREN":
+                this.advance();
+                result = this.expr();
+                if (this.curr_tok.type === "RPAREN") {
+                    this.advance();
+                } else {
+                    throw new Error("Expected ')'");
+                }
+                break;
+            default:
+                throw new Error("Unexpected token: " + JSON.stringify(this.curr_tok));
         }
         return result;
     }
@@ -221,38 +246,40 @@ function run() {
     const commands = [];
     while (a === true) {
         let text = prompt("Xinter ==>");
-        if (text === "calc") {
-            calcMode = true;
-            console.log("Calc mode activated");
-            continue;
-        } else if (text === "decalc") {
-            calcMode = false;
-            console.log("Calc mode deactivated");
-            continue;
-        } else if (text === "dev") {
-            debug = true;
-            console.log("Developer mode activated");
-            continue;
-        } else if (text === "undev") {
-            debug = false;
-            console.log("Developer mode deactivated");
-            continue;
-        } else if (text === "run") {
-            console.log("Running all commands...");
-            for (const cmd of commands) {
-                let lexer = new Lexer(cmd, debug);
+        switch (text) {
+            case "calc":
+                calcMode = true;
+                console.log("Calc mode activated");
+                continue;
+            case "decalc":
+                calcMode = false;
+                console.log("Calc mode deactivated");
+                continue;
+            case "dev":
+                debug = true;
+                console.log("Developer mode activated");
+                continue;
+            case "undev":
+                debug = false;
+                console.log("Developer mode deactivated");
+                continue;
+            case "run":
+                console.log("Running all commands...");
+                for (const cmd of commands) {
+                    let lexer = new Lexer(cmd, debug);
+                    let parser = new Parser(lexer.tokens, calcMode, debug, variables);
+                }
+                continue;
+            case "exit":
+                console.log("exiting");
+                break;
+            default:
+                commands.push(text);
+                let lexer = new Lexer(text, debug);
                 let parser = new Parser(lexer.tokens, calcMode, debug, variables);
-            }
-            continue;
-        } else if (text === "exit") {
-            console.log("exiting");
-            break;
+                continue;
         }
-        else {
-            commands.push(text);
-        }
-        let lexer = new Lexer(text, debug);
-        let parser = new Parser(lexer.tokens, calcMode, debug, variables);
     }
 }
+
 run();
