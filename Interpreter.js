@@ -14,63 +14,32 @@ class Lexer {
     }
 
     advance() {
-        this.pos += 1;
-        if (this.pos < this.src.length) {
-            this.curr_char = this.src[this.pos];
-        } else {
-            this.curr_char = null;
-        }
+        this.curr_char = ++this.pos < this.src.length ? this.src[this.pos] : null;
         if (this.debug) {
             console.log(`Lexer advance: pos=${this.pos}, curr_char=${this.curr_char}`);
         }
     }
 
     tokenize() {
+        const tokenMap = {
+            "+": "PLUS", "-": "MINUS", "*": "MULTIPLY", "/": "DIVIDE",
+            "=": "EQUALS", "&": "AND", "|": "OR", "!": "NOT",
+            "(": "LPAREN", ")": "RPAREN"
+        };
         while (this.curr_char !== null) {
-            switch (this.curr_char) {
-                case "+":
-                    this.tokens.push({ type: "PLUS", value: "+" });
-                    this.advance();
-                    break;
-                case "-":
-                    this.tokens.push({ type: "MINUS", value: "-" });
-                    this.advance();
-                    break;
-                case "*":
-                    this.tokens.push({ type: "MULTIPLY", value: "*" });
-                    this.advance();
-                    break;
-                case "/":
-                    this.tokens.push({ type: "DIVIDE", value: "/" });
-                    this.advance();
-                    break;
-                case "=":
-                    this.tokens.push({ type: "EQUALS", value: "=" });
-                    this.advance();
-                    break;
-                case "(":
-                    this.tokens.push({ type: "LPAREN", value: "(" });
-                    this.advance();
-                    break;
-                case ")":
-                    this.tokens.push({ type: "RPAREN", value: ")" });
-                    this.advance();
-                    break;
-                case '"':
-                    this.parsestring();
-                    break;
-                case ' ':
-                    this.advance(); // Skip whitespace
-                    break;
-                default:
-                    if (this.digits.includes(this.curr_char)) {
-                        this.parsenum();
-                    } else if (this.letters.includes(this.curr_char)) {
-                        this.parsevar();
-                    } else {
-                        throw new Error("Unexpected character: " + this.curr_char);
-                    }
-                    break;
+            if (tokenMap[this.curr_char]) {
+                this.tokens.push({ type: tokenMap[this.curr_char], value: this.curr_char });
+                this.advance();
+            } else if (this.curr_char === '"') {
+                this.parsestring();
+            } else if (this.curr_char === ' ') {
+                this.advance(); // Skip whitespace
+            } else if (this.digits.includes(this.curr_char)) {
+                this.parsenum();
+            } else if (this.letters.includes(this.curr_char)) {
+                this.parsevar();
+            } else {
+                throw new Error("Unexpected character: " + this.curr_char);
             }
         }
         if (this.debug) {
@@ -125,12 +94,7 @@ class Parser {
     }
 
     advance() {
-        this.idx += 1;
-        if (this.idx < this.tokens.length) {
-            this.curr_tok = this.tokens[this.idx];
-        } else {
-            this.curr_tok = null;
-        }
+        this.curr_tok = ++this.idx < this.tokens.length ? this.tokens[this.idx] : null;
         if (this.debug) {
             console.log(`Parser advance: idx=${this.idx}, curr_tok=${JSON.stringify(this.curr_tok)}`);
         }
@@ -138,20 +102,17 @@ class Parser {
 
     parse() {
         while (this.curr_tok !== null) {
-            switch (this.curr_tok.type) {
-                case "IDENTIFIER":
-                    if (this.tokens[this.idx + 1] && this.tokens[this.idx + 1].type === "EQUALS") {
-                        this.assign();
-                    } else if (this.curr_tok.value === "log") {
-                        this.advance();
-                        this.print();
-                    } else {
-                        this.expr();
-                    }
-                    break;
-                default:
+            if (this.curr_tok.type === "IDENTIFIER") {
+                if (this.tokens[this.idx + 1] && this.tokens[this.idx + 1].type === "EQUALS") {
+                    this.assign();
+                } else if (this.curr_tok.value === "log") {
+                    this.advance();
+                    this.print();
+                } else {
                     this.expr();
-                    break;
+                }
+            } else {
+                this.expr();
             }
         }
     }
@@ -169,13 +130,17 @@ class Parser {
 
     expr() {
         let result = this.term();
-        while (this.curr_tok && (this.curr_tok.type === "PLUS" || this.curr_tok.type === "MINUS")) {
+        while (this.curr_tok && (this.curr_tok.type === "PLUS" || this.curr_tok.type === "MINUS" || this.curr_tok.type === "AND" || this.curr_tok.type === "OR")) {
             let op = this.curr_tok.type;
             this.advance();
             if (op === "PLUS") {
                 result += this.term();
             } else if (op === "MINUS") {
                 result -= this.term();
+            } else if (op === "AND") {
+                result = result && this.term();
+            } else if (op === "OR") {
+                result = result || this.term();
             }
         }
         if (this.calcMode) {
@@ -216,6 +181,10 @@ class Parser {
                 } else {
                     throw new Error(`Undefined variable: ${this.curr_tok.value}`);
                 }
+                break;
+            case "NOT":
+                this.advance();
+                result = !this.factor();
                 break;
             case "LPAREN":
                 this.advance();
@@ -272,6 +241,7 @@ function run() {
                 continue;
             case "exit":
                 console.log("exiting");
+                a = false;
                 break;
             default:
                 commands.push(text);
@@ -281,5 +251,4 @@ function run() {
         }
     }
 }
-
 run();
