@@ -77,7 +77,11 @@ class Lexer {
             var_str += this.curr_char;
             this.advance();
         }
-        this.tokens.push({ type: "IDENTIFIER", value: var_str });
+        if (var_str === "true" || var_str === "false") {
+            this.tokens.push({ type: "BOOLEAN", value: var_str === "true" });
+        } else {
+            this.tokens.push({ type: "IDENTIFIER", value: var_str });
+        }
     }
 }
 
@@ -171,6 +175,10 @@ class Parser {
                 this.advance();
                 break;
             case "STRING":
+                result = this.curr_tok.value;
+                this.advance();
+                break;
+            case "BOOLEAN":
                 result = this.curr_tok.value;
                 this.advance();
                 break;
