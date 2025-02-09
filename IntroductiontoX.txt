@@ -1,4 +1,4 @@
-Detailed Explanation of Methods in Interpreter.js
+#Detailed Explanation of Methods in Interpreter.js
 Lexer Class
 Constructor (constructor(text, debug))
 
